@@ -48,7 +48,7 @@ for rice_meal in rice_meals:
 
     # Store the results for each rice meal
     lift_value = round(lift_X_to_Y, 2)
-    results.append(f"Lift({most_common_time} of {most_common_age} --> {rice_meal}) : {lift_value}")
+    results.append(f"Lift({most_common_time} & {most_common_age} → {rice_meal}) : {lift_value}")
 
 # Display results
 print ("Lift of Most Common Visit Time of Most Frequent Age Group → Each Rice Meals Usually Ordered from McDonald's")
