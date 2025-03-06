@@ -2,36 +2,35 @@ import pandas as pd
 # Load the dataset
 df = pd.read_csv("Downloads/FastFood.csv")
 
-# most frequent age group
+# Most frequent age group
 age_group = df["Age"].mode()[0]
 
-# most common visit time age group
-visit_time = df[df["Age"] == age_group]["What time do you usually go to McDonalds?"].mode()[0]
+# Most common visit time of this age group
+time = df[df["Age"] == age_group]["What time do you usually go to McDonalds?"].mode()[0]
 
-# Define Menu Item (Consequent Y)
-menu_item = "Rice Meals"
+# Filter transactions that occur at this visit time
+visit = df[df["What time do you usually go to McDonalds?"] == time]
 
-# Count where customers in this visit time order anything
-count_x = df[df["What time do you usually go to McDonalds?"] == visit_time].shape[0]
+# Extract rice meal orders
+meals = visit["Which rice meals do you usually order from McDonalds?"].str.split(",", expand=True)
+meals = meals.stack().reset_index(drop=True)  # Flatten into a single column
 
-# Count where customers in this visit time specifically order Rice Meals
-count_x_y = df[
-    (df["What time do you usually go to McDonalds?"] == visit_time) &
-    (df["Which of the menu items do you usually order?"].str.contains(menu_item, na=False))
-].shape[0]
+# Clean values
+meals = meals.str.strip().str.lower().str.title()
 
-# Compute Confidence
-confidence = (count_x_y / count_x) * 100 if count_x > 0 else 0
+# Count occurrences of each rice meal
+rm_counts = rice_meals.value_counts().reset_index()
+rm_counts.columns = ["Rice Meal", "Count"]
 
-# Create DataFrame for tabular display
-result = pd.DataFrame({
-    "Formula": [
-        f"Count({visit_time} ∪ {menu_item})",
-        f"Count({visit_time})"
-    ],
-    "Value": [count_x_y, count_x]
-})
+# Add visit time column
+rm_counts.insert(0, "Visit Time", time)
 
-# Display results
-print(result)
-print(f"\nConfidence({visit_time} → {menu_item}): {confidence:.2f}%")
+# Print results in table format
+print(rm_counts.to_string(index=False))
+
+# Calculate and print confidence values separately
+total = visit.shape[0]
+print("\nConfidence Values for Each Combination:")
+for meal, count in zip(rm_counts["Rice Meal"], rm_counts["Count"]):
+    confidence = (count / total) * 100
+    print(f"Confidence({time} → {meal}): {confidence:.2f}%")
