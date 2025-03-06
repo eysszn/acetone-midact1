@@ -28,11 +28,8 @@ top_meal_combinations = meal_drink_counts[meal_drink_counts["Rice_Meal"] == top_
 # Get total count of the highest-ordered rice meal
 highest_meal_total = top_meal_combinations["Count"].sum()
 
-# Get max single combination count (most frequently ordered Rice Meal + Drink pair)
-max_combo_count = top_meal_combinations["Count"].max()
-
-# Compute ratio of most ordered combination to total orders of that rice meal
-max_ratio = max_combo_count / highest_meal_total
+# Compute ratio of each combination to total orders of that rice meal (in percentage)
+top_meal_combinations["Ratio (%)"] = round((top_meal_combinations["Count"] / highest_meal_total) * 100, 1)
 
 # Sort by count for better visualization
 top_meal_combinations = top_meal_combinations.sort_values(by="Count", ascending=False)
@@ -50,7 +47,7 @@ for index, row in enumerate(top_meal_combinations.itertuples()):
     ax.text(
         row.Count + 1,  # Position text slightly outside the bar
         index, 
-        f"{row.Count} ({row.Count / highest_meal_total:.2%})",
+        f"{row.Count} ({row._4}%)",  # Show count and percentage
         va="center", 
         ha="left",
         color="black",  # Ensure visibility
@@ -65,11 +62,9 @@ plt.title(f"Drink Combinations for Most Ordered Rice Meal: {top_rice_meal}")
 plt.grid(axis="x", linestyle="--", alpha=0.5)
 
 # Show results
-print(top_meal_combinations)
+print(top_meal_combinations[["Rice_Meal", "Drink", "Count", "Ratio (%)"]])
 plt.show()
 
 # Display summary
 print(f"\nMost Ordered Rice Meal: {top_rice_meal}")
 print(f"Total Count of {top_rice_meal}: {highest_meal_total}")
-print(f"Highest Ordered Rice Meal + Drink Combination Count: {max_combo_count}")
-print(f"Max Ratio (Top Combination / Total of {top_rice_meal}): {max_ratio:.2%}")
