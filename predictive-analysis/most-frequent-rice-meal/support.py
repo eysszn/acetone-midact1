@@ -3,101 +3,68 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load dataset
-df = pd.read_excel("G:/My Drive/3rd Year 2ndSem/Data Analytics/Midterms/2Copy of SixSigmas-FastFood.xlsx", sheet_name='Clean')
+df = pd.read_excel("C:/Users/markl/Downloads/SixSigmas-FastFood.xlsx", sheet_name="SixSigmas-FastFood")
 
-# Ensure "Rice Meals" is a list, replacing NaN with ["None"]
-df["Rice_Meal"] = df["Which rice meals do you usually order from McDonalds?"].apply(lambda x: x.split(", ") if pd.notna(x) else ["None"])
+# Ensure both columns are treated as lists, replacing NaN with ["None"]
+df["Rice_Meal"] = df["Which rice meals do you usually order from McDonalds?"].str.split(", ")
+df["Drink"] = df["Which drink/s do you usually order from McDonalds?"].apply(lambda x: x.split(", ") if pd.notna(x) else ["None"])
 
-# Strip spaces
-df["Rice_Meal"] = df["Rice_Meal"].apply(lambda meals: [meal.strip() for meal in meals])
+# Explode both columns to align them
+df_exploded = df.explode("Rice_Meal").explode("Drink")
 
-# Explode lists to count individual items
-df_exploded = df.explode("Rice_Meal")
+# Strip leading/trailing spaces
+df_exploded["Rice_Meal"] = df_exploded["Rice_Meal"].str.strip()
+df_exploded["Drink"] = df_exploded["Drink"].str.strip()
 
-# Count occurrences of each age group
-age_counts = df_exploded["Age"].value_counts().reset_index()
-age_counts.columns = ["Age Group", "Count"]
+# Group by Rice Meal and Drink, then count occurrences
+meal_drink_counts = df_exploded.groupby(["Rice_Meal", "Drink"]).size().reset_index(name="Count")
 
-# Get the most frequent age group
-most_frequent_age_group = age_counts.iloc[0]["Age Group"]
-most_frequent_age_count = age_counts.iloc[0]["Count"]
+# Identify the highest-ordered rice meal
+top_rice_meal = meal_drink_counts.groupby("Rice_Meal")["Count"].sum().idxmax()
 
-# Filter dataset to include only the most frequent age group
-filtered_df = df_exploded[df_exploded["Age"] == most_frequent_age_group]
+# Filter only the highest-ordered rice meal and its drink combinations
+top_meal_combinations = meal_drink_counts[meal_drink_counts["Rice_Meal"] == top_rice_meal]
 
-# Split visit times into separate entries using commas as delimiters
-filtered_df["Visit_Times"] = filtered_df["What time do you usually go to McDonalds?"].apply(
-    lambda x: [time.strip() for time in x.split(",")] if pd.notna(x) else []
-)
+# Get total count of the highest-ordered rice meal
+highest_meal_total = top_meal_combinations["Count"].sum()
 
-# Explode visit times to count them individually
-df_visit_exploded = filtered_df.explode("Visit_Times")
+# Compute ratio of each combination to total orders of that rice meal (in percentage)
+top_meal_combinations["Ratio (%)"] = round((top_meal_combinations["Count"] / highest_meal_total) * 100, 1)
 
-# Count occurrences of visit times
-visit_time_counts = df_visit_exploded["Visit_Times"].value_counts().reset_index()
-visit_time_counts.columns = ["Visit Time", "Count"]
+# Sort by count for better visualization
+top_meal_combinations = top_meal_combinations.sort_values(by="Count", ascending=False)
 
-# Get the most common visit time
-most_common_visit_time = visit_time_counts.iloc[0]["Visit Time"]
-most_common_visit_count = visit_time_counts.iloc[0]["Count"]
+# Plot the filtered bar chart
+plt.figure(figsize=(10, 6))
+ax = sns.barplot(data=top_meal_combinations, x="Count", y="Drink", palette="muted")
 
-# Filter dataset to include only the most frequent age group and most common visit time
-filtered_df = df_visit_exploded[df_visit_exploded["Visit_Times"] == most_common_visit_time]
+# Extend x-axis limits to create more space for labels
+max_x_value = top_meal_combinations["Count"].max()
+plt.xlim(0, max_x_value + (max_x_value * 0.3))  # Add 30% more space to the right
 
-# Count occurrences of rice meals
-rice_meal_counts = filtered_df["Rice_Meal"].value_counts().reset_index()
-rice_meal_counts.columns = ["Rice Meal", "Count"]
+# Add annotations **inside** the bars for better readability
+for index, row in enumerate(top_meal_combinations.itertuples()):
+    ax.text(
+        row.Count + 1,  # Position text slightly outside the bar
+        index, 
+        f"{row.Count} ({row._4}%)",  # Show count and percentage
+        va="center", 
+        ha="left",
+        color="black",  # Ensure visibility
+        fontsize=11,
+        fontweight="bold"
+    )
 
-# Compute total orders
-total_rice_meal_count = rice_meal_counts["Count"].sum()
+# Add labels and title
+plt.xlabel("Order Count")
+plt.ylabel("Drink Pairing")
+plt.title(f"Drink Combinations for Most Ordered Rice Meal: {top_rice_meal}")
+plt.grid(axis="x", linestyle="--", alpha=0.5)
 
-# Compute ratio (%) for each rice meal
-rice_meal_counts["Ratio (%)"] = (rice_meal_counts["Count"] / total_rice_meal_count) * 100
+# Show results
+print(top_meal_combinations[["Rice_Meal", "Drink", "Count", "Ratio (%)"]])
+plt.show()
 
-# Display Results
-print(f"\n👥 **Most Frequent Age Group:** {most_frequent_age_group} ({most_frequent_age_count} people)\n")
-print(f"⏰ **Most Common Visit Time for This Age Group:** {most_common_visit_time} ({most_common_visit_count} visits)\n")
-
-if not rice_meal_counts.empty:
-    most_common_rice_meal = rice_meal_counts.iloc[0]["Rice Meal"]
-    most_common_rice_meal_count = rice_meal_counts.iloc[0]["Count"]
-    print(f"🍛 **Most Ordered Rice Meal at This Time:** {most_common_rice_meal} ({most_common_rice_meal_count} orders)\n")
-else:
-    print("\n❌ No rice meal data found for this visit time.\n")
-
-# If no valid data is found, exit gracefully
-if rice_meal_counts.empty:
-    print("\n❌ No rice meal data found for this visit time.\n")
-else:
-    # Modify labels to include both count and percentage
-    rice_meal_counts["Label"] = rice_meal_counts.apply(lambda row: f"{row['Rice Meal']} ({row['Ratio (%)']:.2f}%)", axis=1)
-
-    # Plot bar chart for rice meals
-    plt.figure(figsize=(12, 6))
-    ax = sns.barplot(data=rice_meal_counts, x="Count", y="Label", palette="muted")
-
-    # Extend x-axis for better readability
-    max_x_value = rice_meal_counts["Count"].max()
-    plt.xlim(0, max_x_value + (max_x_value * 0.3))  # Add 30% more space
-
-    # Add annotations inside bars with counts and ratios in percentage
-    for index, row in rice_meal_counts.iterrows():
-        ax.text(
-            row["Count"] + 1,  # Slightly outside the bar
-            index, 
-            f"{row['Count']} ({row['Ratio (%)']:.2f}%)",  # Show both count and percentage
-            va="center", 
-            ha="left",
-            color="black", 
-            fontsize=11,
-            fontweight="bold"
-        )
-
-    # Labels and title
-    plt.xlabel("Order Count")
-    plt.ylabel("Rice Meal")
-    plt.title(f"Rice Meals Ordered During {most_common_visit_time} for {most_frequent_age_group}")
-    plt.grid(axis="x", linestyle="--", alpha=0.5)
-
-    # Show results
-    plt.show()
+# Display summary
+print(f"\nMost Ordered Rice Meal: {top_rice_meal}")
+print(f"Total Count of {top_rice_meal}: {highest_meal_total}")
