@@ -51,13 +51,13 @@ top_two_promos = promo_counts.head(2)
 # Display Results
 print(f"\n **Most Frequently Ordered Menu Item:** {most_frequent_menu_item} ({most_frequent_menu_count} orders)\n")
 
-print("🎉 **Top 2 Promotion Types for This Menu Item:**")
+print(" **Top 2 Promotion Types for This Menu Item:**")
 for _, row in top_two_promos.iterrows():
-    print(f"➡️ {row['Promotion Type']}: {row['Count']} times used ({row['Ratio (%)']:.2f}%)")
+    print(f" {row['Promotion Type']}: {row['Count']} times used ({row['Ratio (%)']:.2f}%)")
 
 # If no valid data is found, exit gracefully
 if promo_counts.empty:
-    print("\n❌ No promotion data found for this menu item.\n")
+    print("\n No promotion data found for this menu item.\n")
 else:
     # Modify labels to include both count and percentage
     promo_counts["Label"] = promo_counts.apply(lambda row: f"{row['Promotion Type']} ({row['Ratio (%)']:.2f}%)", axis=1)
