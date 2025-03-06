@@ -1,42 +1,40 @@
 import pandas as pd
+import re
 
-# Load the dataset
+# Load dataset
 df = pd.read_csv("Downloads/FastFood.csv")
 
-# Define X (Antecedents) and Y (Consequents)
-item = "Rice Meals"
-other_meal = "Fries"
-type_1 = "Combo Deals"
-type_2 = "Percentage Discount"
+# Process Menu Item and Promotion Type columns
+df["Menu"] = df["Which of the menu items do you usually order?"].apply(lambda x: x.split(", ") if pd.notna(x) else ["None"])
+df["Promo"] = df["What types of promotions are most likely to catch your attention? (Select all that apply)"].apply(
+    lambda x: re.sub(r"\(.*?\)", "", x).strip().split(", ") if pd.notna(x) else ["None"]
+)
 
-# Count transactions where Rice Meals and Fries are ordered (X)
-count_x = df[
-    (df["Which of the menu items do you usually order?"].str.contains(item, na=False)) &
-    (df["What other meal/s you usually order from McDonalds?"].str.contains(other_meal, na=False))
-].shape[0]
+# Expand lists into rows
+df = df.explode("Menu").explode("Promo")
 
-# Count transactions where Rice Meals, Fries, and both promotions exist (X → Y)
-count_x_y = df[
-    (df["Which of the menu items do you usually order?"].str.contains(item, na=False)) &
-    (df["What other meal/s you usually order from McDonalds?"].str.contains(other_meal, na=False)) &
-    (df["What types of promotions are most likely to catch your attention? (Select all that apply)"].str.contains(type_1, na=False)) &
-    (df["What types of promotions are most likely to catch your attention? (Select all that apply)"].str.contains(type_2, na=False))
-].shape[0]
+# Strip spaces
+df["Menu"] = df["Menu"].str.strip()
+df["Promo"] = df["Promo"].str.strip()
 
-# Compute Confidence
-confidence = (count_x_y / count_x) * 100 if count_x > 0 else 0
+# Get most ordered menu item
+menu_counts = df["Menu"].value_counts().reset_index()
+menu_counts.columns = ["Menu", "Count"]
+top_menu = menu_counts.iloc[0]["Menu"]
+top_count = menu_counts.iloc[0]["Count"]
 
-# Create DataFrame for tabular display
-result = pd.DataFrame({
-    "Formula": [
-        f"Count({item}, {other_meal} ∪ {type_1}, {type_2})",
-        f"Count({item} ∪ {other_meal})"
-    ],
-    "Value": [count_x_y, count_x]
-})
+# Filter by top menu and count promotions
+filtered = df[df["Menu"] == top_menu]
+promo_counts = filtered["Promo"].value_counts().reset_index()
+promo_counts.columns = ["Promo", "Count"]
+promo_counts.insert(0, "Menu", top_menu)
 
-# Display results
-print(result)
+# Display results (without confidence in the table)
+print(f"\nMost Ordered Menu Item: {top_menu} ({top_count} orders)\n")
+print(promo_counts.to_string(index=False))
 
-# Print confidence separately
-print(f"\nConfidence({item}, {other_meal} → {type_1}, {type_2}): {confidence:.2f}%")
+# Compute and display confidence values below the table for the top two promotions
+print("\nConfidence Values for Top Two Promotions:")
+for _, row in promo_counts.head(4).iterrows():
+    confidence = (row["Count"] / top_count) * 100
+    print(f"Confidence({top_menu} ➝ {row['Promo']}): {confidence:.2f}%")
