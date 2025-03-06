@@ -55,19 +55,19 @@ total_rice_meal_count = rice_meal_counts["Count"].sum()
 rice_meal_counts["Ratio (%)"] = (rice_meal_counts["Count"] / total_rice_meal_count) * 100
 
 # Display Results
-print(f"\n👥 **Most Frequent Age Group:** {most_frequent_age_group} ({most_frequent_age_count} people)\n")
-print(f"⏰ **Most Common Visit Time for This Age Group:** {most_common_visit_time} ({most_common_visit_count} visits)\n")
+print(f"\n **Most Frequent Age Group:** {most_frequent_age_group} ({most_frequent_age_count} people)\n")
+print(f" **Most Common Visit Time for This Age Group:** {most_common_visit_time} ({most_common_visit_count} visits)\n")
 
 if not rice_meal_counts.empty:
     most_common_rice_meal = rice_meal_counts.iloc[0]["Rice Meal"]
     most_common_rice_meal_count = rice_meal_counts.iloc[0]["Count"]
-    print(f"🍛 **Most Ordered Rice Meal at This Time:** {most_common_rice_meal} ({most_common_rice_meal_count} orders)\n")
+    print(f" **Most Ordered Rice Meal at This Time:** {most_common_rice_meal} ({most_common_rice_meal_count} orders)\n")
 else:
-    print("\n❌ No rice meal data found for this visit time.\n")
+    print("\n No rice meal data found for this visit time.\n")
 
 # If no valid data is found, exit gracefully
 if rice_meal_counts.empty:
-    print("\n❌ No rice meal data found for this visit time.\n")
+    print("\n No rice meal data found for this visit time.\n")
 else:
     # Modify labels to include both count and percentage
     rice_meal_counts["Label"] = rice_meal_counts.apply(lambda row: f"{row['Rice Meal']} ({row['Ratio (%)']:.2f}%)", axis=1)
