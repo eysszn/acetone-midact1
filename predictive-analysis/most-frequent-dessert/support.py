@@ -40,18 +40,18 @@ highest_meal_count = meal_counts.iloc[0]["Count"]
 highest_meal_ratio = (highest_meal_count / total_meal_count) * 100
 
 # Display the computed results
-print(f"\n🍦 **McFlurry Meal Pairing Analysis** 🍦")
-print(f"➡️ Total meals paired with McFlurry: {total_meal_count}")
-print(f"➡️ Most ordered meal paired with McFlurry: {highest_meal} ({highest_meal_count} orders)")
-print(f"➡️ Ratio of highest ordered meal to total: {highest_meal_ratio:.2f}%\n")
+print(f"\n **McFlurry Meal Pairing Analysis** ")
+print(f" Total meals paired with McFlurry: {total_meal_count}")
+print(f" Most ordered meal paired with McFlurry: {highest_meal} ({highest_meal_count} orders)")
+print(f" Ratio of highest ordered meal to total: {highest_meal_ratio:.2f}%\n")
 
 # Print the ratio for all combinations
-print("📊 **All McFlurry + Meal Pairing Ratios** 📊")
+print(" **All McFlurry + Meal Pairing Ratios** ")
 print(meal_counts.to_string(index=False))  # Display full table without truncation
 
 # If no valid data is found, exit gracefully
 if meal_counts.empty:
-    print("\n❌ No data found for McFlurry pairings.\n")
+    print("\n No data found for McFlurry pairings.\n")
 else:
     # Plot bar chart
     plt.figure(figsize=(12, 6))
