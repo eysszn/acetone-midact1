@@ -2,28 +2,42 @@ import pandas as pd
 # Load the dataset
 df = pd.read_csv("Downloads/FastFood.csv")
 
-# Count where both Afternoon Snack and McFlurry exist
-count_x = df[
-    (df["What time do you usually go to McDonalds?"].str.contains("Afternoon Snack", na=False)) &
-    (df["Which dessert/s do you usually order from McDonalds?"].str.contains("McFlurry", na=False))
-].shape[0]
+# Convert all text columns to strings and remove extra spaces
+df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
-# Count where X₁, X₂, and Y are ordered
-count_xy = df[
-    (df["What time do you usually go to McDonalds?"].str.contains("Afternoon Snack", na=False)) &
-    (df["Which dessert/s do you usually order from McDonalds?"].str.contains("McFlurry", na=False)) &
-    (df["What other meal/s you usually order from McDonalds?"].str.contains("Fries", na=False))
-].shape[0]
+# Filter "McFlurry"
+mcflurry = df[df["Which dessert/s do you usually order from McDonalds?"].str.contains("McFlurry", case=False, na=False)]
 
-# Compute confidence
-confidence = (count_xy / count_x) * 100 if count_x > 0 else 0
+# Count "McFlurry"
+count = mcflurry.shape[0]
 
-# Create DataFrame for tabular display
-result = pd.DataFrame({
-    "Formula": ["Count(Afternoon Snack, Mcflurry", "Count(Afternoon Snack, Mcflurry → Fries)"],
-    "Value": [count_xy, count_x]
-})
+# Split multiple "Other Meals" into separate rows
+other = mcflurry["What other meal/s you usually order from McDonalds?"].str.split(",", expand=True)
+other = other.stack().reset_index(drop=True)  
+# Strip spaces and force lowercase for consistency
+other = other.str.strip().str.lower()
 
-# Display results
-print(result)
-print(f"\nConfidence(Afternoon Snack, Mcflurry → Fries): {confidence:.2f}%")
+# Restore proper capitalization
+other = other.str.title()
+
+# Remove empty values from the 'other' column
+other = other[other != ""]
+
+# Count occurrences of each meal
+meal = other.value_counts().reset_index()
+meal.columns = ["Other Meal", "Count"]
+
+# Add a column for the dessert (McFlurry)
+meal.insert(0, "Dessert", "McFlurry")
+
+# Print table if there are valid combinations
+if not meal.empty:
+    print(meal.to_string(index=False))
+
+    # Calculate confidence values
+    confidence_values = (meal["Count"] / count) * 100
+
+    # Print confidence values separately
+    print("\nConfidence Values for Each Combination:")
+    for meal_name, conf in zip(meal["Other Meal"], confidence_values):
+        print(f"Confidence(McFlurry → {meal_name}): {conf:.2f}%")
