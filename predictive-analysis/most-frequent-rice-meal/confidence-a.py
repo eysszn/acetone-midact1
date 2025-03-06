@@ -1,27 +1,30 @@
 import pandas as pd
+
 # Load the dataset
 df = pd.read_csv("Downloads/FastFood.csv")
 
-# Count Fried Chicken with Rice
-count_fc = df[
+# Filter only "Fried Chicken with Rice"
+fried_chicken = df[
     df["Which rice meals do you usually order from McDonalds?"].str.contains("Fried Chicken with Rice", na=False)
-].shape[0]
+]
 
-# Count Fried Chicken Rice & Soft Drinks
-count_fc_sd = df[
-    (df["Which rice meals do you usually order from McDonalds?"].str.contains("Fried Chicken with Rice", na=False)) &
-    (df["Which drink/s do you usually order from McDonalds?"].str.contains("Soft Drinks", na=False))
-].shape[0]
+# Count total orders of Fried Chicken with Rice
+fc = fried_chicken.shape[0]
 
-# Compute confidence
-confidence_fc_to_sd = (count_fc_sd / count_fc) * 100 if count_fc > 0 else 0
+# Split multiple drink choices into separate rows
+drinks = fried_chicken["Which drink/s do you usually order from McDonalds?"].str.split(",", expand=True)
+drinks = drinks.stack().reset_index(drop=True) 
 
-# Create a DataFrame to display results in a tabular format
-result = pd.DataFrame({
-    "Formula": ["Count(Fried Chicken with Rice ∪ Soft Drinks)", "Count(Fried Chicken with Rice)"],
-    "Value": [count_fc_sd, count_fc]
-})
+# Remove extra spaces and count occurrences of each drink
+dcounts = drinks.str.strip().value_counts().reset_index()
+dcounts.columns = ["Drink", "Count"]
 
-# Display the table
-print(result)
-print(f"\nConfidence(Fried Chicken with Rice → Soft Drinks): {confidence_fc_to_sd:.2f}%")
+# Add the "Rice Meal" column
+dcounts.insert(0, "Rice_Meal", "Fried Chicken with Rice")
+
+# Display the properly formatted output without confidence in the table
+print(dcounts.to_string(index=False))
+print("\nConfidence Values for Each Combination:")
+for _, row in dcounts.iterrows():
+    confidence = (row["Count"] / fc) * 100
+    print(f"Confidence(Fried Chicken with Rice → {row['Drink']}): {confidence:.2f}%")
